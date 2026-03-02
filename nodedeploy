@@ -1,0 +1,30 @@
+---
+- name: Deploy Node.js App
+  hosts: all
+  tasks:
+    - name: Create Web Directory
+      ansible.windows.win_file:
+        path: C:\inetpub\nodejs-app
+        state: directory
+
+    - name: Clone Repository
+      ansible.windows.win_shell: |
+        if (Test-Path C:\inetpub\nodejs-app\.git) {
+          cd C:\inetpub\nodejs-app; git pull
+        } else {
+          git clone https://github.com/ChereSenay/potest.git C:\inetpub\nodejs-app
+        }
+
+    # Note: This assumes Node.js is installed on the target server
+    - name: Install NPM Dependencies
+      ansible.windows.win_shell: npm install
+      args:
+        chdir: C:\inetpub\nodejs-app
+
+    - name: Open Firewall Port 1020
+      community.windows.win_firewall_rule:
+        name: "AllowNodePort"
+        localport: 1020
+        action: allow
+        direction: in
+        protocol: tcp
