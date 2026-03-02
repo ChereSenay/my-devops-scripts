@@ -1,0 +1,38 @@
+---
+- name: Deploy Static Website to IIS
+  hosts: all
+  tasks:
+    - name: Ensure IIS is installed
+      ansible.windows.win_feature:
+        name: Web-Server
+        state: present
+
+    - name: Create directory for the website
+      ansible.windows.win_file:
+        path: C:\inetpub\first-deployment
+        state: directory
+
+    - name: Clone the website from GitHub
+      ansible.windows.win_shell: |
+        if (Test-Path C:\inetpub\first-deployment\.git) {
+          cd C:\inetpub\first-deployment; git pull
+        } else {
+          git clone https://github.com/ChereSenay/first-deployment.git C:\inetpub\first-deployment
+        }
+
+    - name: Create IIS Website on Port 1020
+      community.windows.win_iis_website:
+        name: "FirstDeploymentTest"
+        state: started
+        port: 1020
+        physical_path: C:\inetpub\first-deployment
+      register: website_status
+
+    - name: Open Port 1020 in Windows Firewall
+      community.windows.win_firewall_rule:
+        name: "AllowPort1020"
+        localport: 1020
+        action: allow
+        direction: in
+        protocol: tcp
+        state: present
